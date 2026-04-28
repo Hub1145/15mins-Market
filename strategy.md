@@ -15,10 +15,10 @@ The engine follows a strict priority list to determine trade conviction.
 ### B. Gold Synergy Bonus
 - When the **Trend Cluster** and the **Monte Carlo Prediction** (>55%) both point in the same direction, a **+20 point synergy bonus** is applied. This signals extreme conviction.
 
-### C. Momentum & Exhaustion
-- **Slope-Based MACD**: No longer uses zero-crossing. It detects momentum shifts by comparing the slope (rising vs. falling) of the 5m histogram.
-- **Early Momentum Priority**: Points are awarded for early-stage streaks (1-5 bars).
-- **Strict Exhaustion Block**: If a momentum streak reaches **6+ bars**, the side is blocked. We do not chase over-extended trends.
+### C. Momentum & Exhaustion (Heiken Ashi)
+- **Multi-Timeframe Alignment**: 5m Heiken Ashi signals are only followed if confirmed by the 1m Heiken Ashi color. (e.g., 5m Green + 1m Red = NO TRADE).
+- **Strict Exhaustion Block**: If a momentum streak reaches **6+ bars** on EITHER the 1m or 5m timeframe, that side is blocked. We do not chase over-extended trends on any timeframe.
+- **Slope-Based MACD**: Evaluates the histogram slope on the 5m timeframe to detect early momentum shifts before zero-crosses.
 
 ### D. Safety Filters
 - **RSI Safeguard**: If RSI > 70 or < 30, the bot attempts to detect reversals. If the bot tries to trend-follow into an overbought/oversold region, the conviction score is slashed by **90%** to prevent exit-liquidity entries.

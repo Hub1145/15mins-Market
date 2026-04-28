@@ -81,19 +81,31 @@ def score_direction(inputs: Dict[str, Any]) -> Dict[str, float]:
         if macd_5m_hist_color == "up": up += 25
         elif macd_5m_hist_color == "down": down += 25
 
-    # 4. 5m Heiken Ashi Exhaustion Reversal
+    # 4. Heiken Ashi Alignment and Exhaustion (1m & 5m)
+    # Alignment: 5m trend requires 1m confirmation
+    # Exhaustion: If either 1m or 5m >= 6, we block the side and favor reversal
     ha_5m_exhausted = ha_5m_count >= 6
-    if ha_5m_exhausted:
-        if ha_5m_color == "green":
+    ha_1m_exhausted = ha_1m_count >= 6
+
+    # UP Conviction (5m Green)
+    if ha_5m_color == "green":
+        if ha_5m_exhausted or ha_1m_exhausted:
             up = 0.0
             down += 20
+        elif ha_1m_color == "green":
+            up += 30 # Double confirmation
         else:
+            up = 0.0 # 5m Green but 1m Red: "It does not go"
+
+    # DOWN Conviction (5m Red)
+    if ha_5m_color == "red":
+        if ha_5m_exhausted or ha_1m_exhausted:
             down = 0.0
             up += 20
-    else:
-        # Early momentum - find entry only if early
-        if ha_5m_color == "green": up += 30
-        elif ha_5m_color == "red": down += 30
+        elif ha_1m_color == "red":
+            down += 30 # Double confirmation
+        else:
+            down = 0.0 # 5m Red but 1m Green: "It does not go"
 
     # 5. CVD Aggression and Divergence - Final Filter
     if cvd_data:
