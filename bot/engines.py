@@ -41,6 +41,11 @@ def score_direction(inputs: Dict[str, Any]) -> Dict[str, float]:
     cluster_strength = cluster.get("strength", 0) if cluster else 0
     uptrend = True if cluster_regime == 1 else False if cluster_regime == -1 else None
 
+    # Define exhaustion states early to avoid UnboundLocalError
+    macd_5m_exhausted = macd_5m_hist_count >= 6
+    ha_5m_exhausted = ha_5m_count >= 6
+    ha_1m_exhausted = ha_1m_count >= 6
+
     # Handle missing essential inputs
     if price is None or cluster is None:
         return {"upScore": None, "downScore": None, "rawUp": None, "uptrend": uptrend}
@@ -76,8 +81,6 @@ def score_direction(inputs: Dict[str, Any]) -> Dict[str, float]:
     # 4. Heiken Ashi Alignment (1m & 5m)
     # Alignment: 5m trend requires 1m confirmation for scoring
     # Note: Exhaustion is handled by the Veto layer at the end
-    ha_5m_exhausted = ha_5m_count >= 6
-    ha_1m_exhausted = ha_1m_count >= 6
 
     # UP Conviction (5m Green)
     if ha_5m_color == "green":
