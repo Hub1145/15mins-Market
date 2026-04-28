@@ -66,46 +66,34 @@ def score_direction(inputs: Dict[str, Any]) -> Dict[str, float]:
         elif cluster_regime == -1 and p_down > 0.55:
             down += 20
 
-    # 3. 5m MACD Momentum and Exhaustion Reversal
-    # If exhausted (streak >= 6), we BLOCK the trend side
-    macd_5m_exhausted = macd_5m_hist_count >= 6
-    if macd_5m_exhausted:
-        if macd_5m_hist_color == "up":
-            up = 0.0      # Hard block exhausted trend
-            down += 15    # Favor potential reversal
-        else:
-            down = 0.0
-            up += 15
-    else:
-        # Early momentum (1-5 bars) - CRITICAL entry point
+    # 3. 5m MACD Momentum
+    # Early momentum (1-5 bars) - CRITICAL entry point
+    # Exhaustion (6+) is handled by the Veto layer at the end
+    if not macd_5m_exhausted:
         if macd_5m_hist_color == "up": up += 25
         elif macd_5m_hist_color == "down": down += 25
 
-    # 4. Heiken Ashi Alignment and Exhaustion (1m & 5m)
-    # Alignment: 5m trend requires 1m confirmation
-    # Exhaustion: If either 1m or 5m >= 6, we block the side and favor reversal
+    # 4. Heiken Ashi Alignment (1m & 5m)
+    # Alignment: 5m trend requires 1m confirmation for scoring
+    # Note: Exhaustion is handled by the Veto layer at the end
     ha_5m_exhausted = ha_5m_count >= 6
     ha_1m_exhausted = ha_1m_count >= 6
 
     # UP Conviction (5m Green)
     if ha_5m_color == "green":
-        if ha_5m_exhausted or ha_1m_exhausted:
-            up = 0.0
-            down += 20
-        elif ha_1m_color == "green":
-            up += 30 # Double confirmation
-        else:
-            up = 0.0 # 5m Green but 1m Red: "It does not go"
+        if not (ha_5m_exhausted or ha_1m_exhausted):
+            if ha_1m_color == "green":
+                up += 30 # Double confirmation
+            else:
+                up = 0.0 # 5m Green but 1m Red: "It does not go"
 
     # DOWN Conviction (5m Red)
     if ha_5m_color == "red":
-        if ha_5m_exhausted or ha_1m_exhausted:
-            down = 0.0
-            up += 20
-        elif ha_1m_color == "red":
-            down += 30 # Double confirmation
-        else:
-            down = 0.0 # 5m Red but 1m Green: "It does not go"
+        if not (ha_5m_exhausted or ha_1m_exhausted):
+            if ha_1m_color == "red":
+                down += 30 # Double confirmation
+            else:
+                down = 0.0 # 5m Red but 1m Green: "It does not go"
 
     # 5. CVD Aggression and Divergence - Final Filter
     if cvd_data:
@@ -134,6 +122,22 @@ def score_direction(inputs: Dict[str, Any]) -> Dict[str, float]:
         down = 0.0 # Strict Bullish only
     elif cluster_regime == -1:
         up = 0.0 # Strict Bearish only
+
+    # MOMENTUM EXHAUSTION VETO (Rule: Never buy into an exhausted trend)
+    # This acts after all other logic to ensure we don't chase 6+ bar streaks
+    if (ha_5m_exhausted or ha_1m_exhausted):
+        if ha_5m_color == "green" or ha_1m_color == "green":
+            up = 0.0 # Veto the Buy
+        if ha_5m_color == "red" or ha_1m_color == "red":
+            down = 0.0 # Veto the Sell
+
+    # MACD Exhaustion Veto
+    macd_5m_exhausted = macd_5m_hist_count >= 6
+    if macd_5m_exhausted:
+        if macd_5m_hist_color == "up":
+            up = 0.0
+        elif macd_5m_hist_color == "down":
+            down = 0.0
 
     import math
     def is_invalid(v):
